@@ -50,10 +50,65 @@ struct Menu {
 void action_exit() {
     exit(0);
 }
+struct Obstacle {
+    int x;
+    int interval;
+    int height;
+};
+struct Player {
+    int score;
+    int x;
+    float y;
+    float velocity;
 
-int main() {
+};
+void flight() {
+    vector<Obstacle> obstacles;
+    int count = 3;
+    for (int i = 0; i < 3; i++) {
+        Obstacle obs{ i * WIDTH/ count, 8,5 + rand() % 8 };
+        obstacles.push_back(obs);
+    }
+    Player player{ 0, 2, 0.0 };
+    float graviry = 0.05;
+    while (true) {
+        console_clear(0x00FF);
+        console_rect(player.x, player.y, 2, 1, ' ', BACKGROUND_RED);
+        player.velocity += graviry;
+        player.y += player.velocity;
+        if (console_just_pressed(VK_SPACE)) {
+            player.velocity -= 0.8;
+
+        }
+        if (player.y < 0) {
+            player.y = 0;
+            player.velocity *= -1;
+        }
+        if (player.y > HEIGHT - 1) {
+            player.y = HEIGHT - 1;
+        }
+        player.score++;
+        for (Obstacle& obs : obstacles) {
+            obs.x--;
+            if (obs.x <= -3) {
+                obs.x += WIDTH;
+                obs.height = 5 + rand() % 8;
+            }
+            if (obs.x == player.x && (player.y < obs.height || player.y > obs.height + obs.interval)) {
+                flight();
+                return;
+            }
+            console_rect(obs.x, 0, 3, obs.height, ' ', BACKGROUND_GREEN);
+            console_rect(obs.x, obs.height + obs.interval, 3, 20, ' ', BACKGROUND_GREEN);
+        } 
+        console_text("Score: " + to_string(player.score), WIDTH - 15, 0);
+        console_flip();
+    }
+}
+
+int menu() {
     Menu menu;
-    menu.buttons.push_back(Button{ 3, 3, 20, "Start", BACKGROUND_GREEN });
+    menu.buttons.push_back(Button{ 3, 3, 20, "Start", BACKGROUND_GREEN, flight });
     menu.buttons.push_back(Button{ 3, 7, 20, "Exit", BACKGROUND_RED, action_exit });
 
     create_console();
@@ -65,18 +120,22 @@ int main() {
             button.draw();
         }
         Button& selectedButton = menu.buttons[menu.selected];
-        console_pixel(selectedButton.x - 2, selectedButton.y+1, '>');
+        console_pixel(selectedButton.x - 2, selectedButton.y + 1, '>');
 
 
         for (int x = 40; x < 110; x++) {
             for (int y = 2; y < 26; y++) {
                 srand(x * 37 + y - console_timer * 45);
                 int z = rand() + rand();
-                console_pixel(x, y, ' '+(rand() % 60), FOREGROUND_GREEN);
+                console_pixel(x, y, ' ' + (rand() % 60), FOREGROUND_GREEN);
             }
         }
-
         console_flip();
     }
+
+
+}
+int main() {
+    menu();
     return 0;
 }
